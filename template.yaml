@@ -40,7 +40,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: my-pictures-bucket
-      AccessControl: public-read #Private  # Adjust access control as needed
+      AccessControl: PublicReadWrite #Private  # Adjust access control as needed
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -70,7 +70,7 @@ Resources:
               ValidateBody: true
             RestApiId:
               Ref: RestApi
-            Asynchronous: 'true'  # Add this line to enable asynchronous invocation
+            # Asynchronous: 'true'  # Add this line to enable asynchronous invocation
         # S3Event:
         #   Type: S3
         #   Properties:
