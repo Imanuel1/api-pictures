@@ -8,7 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 15 # Adjust the timeout as needed (in seconds)
 
     # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
     LoggingConfig:
@@ -18,13 +18,15 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: nonprod
+      BinaryMediaTypes:
+        - multipart/form-data
       EndpointConfiguration:
         Type: REGIONAL
       Models:
         Picture:
           type: object
-          required:
-            - image_src
+          # required:
+          #   - image_src
           properties:
             image_src:
               type: string
@@ -34,6 +36,11 @@ Resources:
               type: string
             image_collection:
               type: string
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-pictures-bucket
+      AccessControl: public-read #Private  # Adjust access control as needed
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -63,6 +70,15 @@ Resources:
               ValidateBody: true
             RestApiId:
               Ref: RestApi
+            Asynchronous: 'true'  # Add this line to enable asynchronous invocation
+        # S3Event:
+        #   Type: S3
+        #   Properties:
+        #     Bucket: my-s3-bucket
+        #     Events: s3:ObjectCreated:*  
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref MyS3Bucket
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group

@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
-// import AWS from 'aws-sdk'
-// const s3 = new AWS.S3();
+import AWS from 'aws-sdk'; // Import using default export
+const s3 = new AWS.S3();
 // const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 /**
@@ -17,24 +17,28 @@ import { v4 as uuid } from 'uuid';
  */
 
 export const lambdaHandler = async (event, context) => {
+  //Log to view full Http request in CloudWatch
+  //Log the entire event object in a more readable JSON format. Check the logged event in CloudWatch logs to see if there are any unexpected characters.
+  // console.log('api event occurred:', JSON.stringify(event, null, 2));
+
+
   // example of picture obj
   const PICTUREDATA = [
     {
       image_id: uuid(),
-      image_src: 'jbvhvcgc3553',
-      tag: '12',
+      image_src: 'java script',
+      image_tag: '12'
     },
   ];
 
-  // Extract parameters from the request
-  // const { keyAPI, tag, collection } = JSON.parse(event.body);
+  // Extract query parameters from the request
+  const { tag, collection } = event.queryStringParameters;
+  console.log("quey params in url event : ", tag, collection);
 
   // Perform authentication checks if needed
 
 
   try {
-    //Log to view full Http request in CloudWatch
-    console.log('api event occured :', event);
     let result = '';
 
     if (event.resource === '/picture') {
@@ -56,17 +60,26 @@ export const lambdaHandler = async (event, context) => {
           // await dynamodb.put(dynamoParams).promise();
           break;
         case 'POST':
-          // Save the image to S3
-          // const imageData = JSON.parse(event.body);
-          // const params = {
-          //   Bucket: 'your-s3-bucket-name',
-          //   Key: `images/${keyAPI}-${Date.now()}.jpg`, // Use keyAPI and a timestamp for a unique key
-          //   Body: Buffer.from(imageData.data, 'base64'),
-          //   ContentType: 'image/jpeg',
-          //   ACL: 'public-read',
-          // };
+          // Handle POST request with binary images
+          // const imageData = event.isBase64Encoded ? event.body : Buffer.from(event.body, 'base64');
+          // console.log("this is event body :", event.body);
+          const imageData = event.isBase64Encoded
+            ? Buffer.from(event.body, 'base64')
+            : Buffer.from(event.body);
 
-          // await s3.upload(params).promise();
+          // Save the image to S3
+          // console.log('****this is imageData:', imageData);
+
+          const params = {
+            Bucket: 'my-pictures-bucket',
+            Key: `images/${uuid()}-${Date.now()}.jpg`, // Use keyAPI and a timestamp for a unique key
+            Body: imageData, // error for imageData.data??
+            ContentType: 'image/jpeg',
+            ACL: 'public-read',
+          };
+          // console.log('****s3 params:', params);
+
+          await s3.upload(params).promise();
 
           // Save metadata to DynamoDB - for rate limiter and more..
 
@@ -82,12 +95,10 @@ export const lambdaHandler = async (event, context) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        message: result,
-      }),
+      body: JSON.stringify({ message: 'Image uploaded successfully' }),
     };
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log("throw error: ", err);
     return {
       statusCode: 500,
       body: JSON.stringify({
